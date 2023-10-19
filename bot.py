@@ -1,71 +1,27 @@
+import discord
 from discord.ext import commands
 
-from db import insert_search_query, get_search_history
-from google_api import google_search
-import settings
+TOKEN = 'MTE2NDU2ODExNTEyMDcxMzc1OA.GaHaN7.-gq0vURwGIua8mSY5ee_PhBXOIAm2vXzrpoI48'  # Replace with your bot token
 
-TOKEN = settings.DISCORD_TOKEN
+intents = discord.Intents.default()
+intents.messages = True
 
-bot = commands.Bot(command_prefix='!')
+bot = commands.Bot(command_prefix='!', intents=intents)
 
+WOLVERINE_ID = 430159483881127948  # Replace with the actual ID of @Wolverine171
 
 @bot.event
 async def on_ready():
-    print(f'{bot.user.name} has connected to Discord!')
-
+    print(f'We have logged in as {bot.user}')
 
 @bot.event
 async def on_message(message):
-    # protect against a potentially recursive case where the bot sends a message that it might, itself, handle
-    if message.author == bot.user:
-        return
+    # Check if the bot is mentioned and the message is not from the bot itself
+    mentioned_users = [user.id for user in message.mentions]
+    if WOLVERINE_ID in mentioned_users and message.author != bot.user:
+        await message.channel.send(f"Hello {message.author.mention}, Wolverine171 is currently away. He'll get back to you soon!")
 
-    if message.content.startswith('hi'):
-        msg = 'hey'
-        await message.channel.send(msg)
     await bot.process_commands(message)
 
-
-@bot.command(name='google')
-async def google(ctx):
-    query = ctx.message.content.split(' ', 1)
-    author_id = ctx.message.author.id
-    response = ''
-    if len(query) == 1:
-        response = 'query required'
-        pass
-    elif len(query) == 2:
-        query = query[1]
-        insert_search_query(author_id, query)
-        response = google_search(query)
-        response = ' \n'.join(response)
-    await ctx.send(response)
-
-
-@bot.command(name='recent')
-async def recent(ctx):
-    query = ctx.message.content.split(' ', 1)
-    author_id = ctx.message.author.id
-    response = ''
-    if len(query) == 1:
-        response = 'query required'
-        pass
-    elif len(query) == 2:
-        query = query[1]
-        response = get_search_history(author_id, query)
-        if response:
-            response = ' \n'.join([x[0] for x in response])
-        else:
-            response = 'No history found'
-    await ctx.send(response)
-
-
-@bot.event
-async def on_command_error(ctx, error):
-    if isinstance(error, commands.CommandNotFound):
-        await ctx.send('Command not found')
-        return
-    raise error
-
-
 bot.run(TOKEN)
+
